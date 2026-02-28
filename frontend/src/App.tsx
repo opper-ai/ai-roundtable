@@ -1,0 +1,160 @@
+import { useMemo, useState, useCallback, useRef } from "react";
+import { SetupForm } from "./components/SetupForm";
+import { RoundtableCanvas } from "./components/RoundtableCanvas";
+import { TranscriptPanel } from "./components/TranscriptPanel";
+import { StatusBar } from "./components/StatusBar";
+import { OptionLegend } from "./components/OptionLegend";
+import { RoundSlider } from "./components/RoundSlider";
+import { useSession } from "./hooks/useSession";
+import { createSession } from "./api/client";
+
+function App() {
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const { session, error } = useSession(sessionId);
+  const [runAgainLoading, setRunAgainLoading] = useState(false);
+  const [viewRound, setViewRound] = useState<number | null>(null); // null = live
+  const [questionExpanded, setQuestionExpanded] = useState(false);
+  const headerRef = useRef<HTMLDivElement>(null);
+
+  // Determine which models are currently "thinking" (no response yet in the current round)
+  const thinkingModels = useMemo(() => {
+    if (!session || session.status !== "running") return new Set<string>();
+    const currentRound = session.rounds[session.rounds.length - 1];
+    if (!currentRound || currentRound.completedAt) return new Set<string>();
+    const responded = new Set(currentRound.responses.map((r) => r.modelId));
+    return new Set(session.models.filter((m) => !responded.has(m)));
+  }, [session]);
+
+  const displayRound = viewRound ?? (session ? session.rounds.length : undefined);
+
+  // Callback for transcript to scroll to a round
+  const [scrollToRound, setScrollToRound] = useState<number | null>(null);
+
+  const handleRoundChange = useCallback((round: number | null) => {
+    setViewRound(round);
+    if (round !== null) {
+      setScrollToRound(round);
+    }
+  }, []);
+
+  const handleRunAgain = async () => {
+    if (!session) return;
+    setRunAgainLoading(true);
+    try {
+      const { sessionId: newId } = await createSession({
+        question: session.question,
+        models: session.models,
+        options: session.options,
+        consensusThreshold: session.consensusThreshold,
+        maxRounds: session.maxRounds,
+        contextRounds: session.contextRounds,
+      });
+      setViewRound(null);
+      setSessionId(newId);
+    } catch {
+      // errors will show via the session error state
+    } finally {
+      setRunAgainLoading(false);
+    }
+  };
+
+  if (!sessionId || !session) {
+    return <SetupForm onSessionCreated={setSessionId} />;
+  }
+
+  return (
+    <div className="flex h-screen flex-col">
+      {/* Header */}
+      <header className="border-b border-slate-700 px-6 py-3" ref={headerRef}>
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-lg font-bold text-white">DeliberAIt</h1>
+            <div
+              className="group mt-0.5 cursor-pointer"
+              onClick={() => setQuestionExpanded((v) => !v)}
+            >
+              <p
+                className={`text-sm text-slate-400 ${questionExpanded ? "" : "line-clamp-2"}`}
+              >
+                {session.question}
+              </p>
+              <span className="text-[10px] text-slate-600 group-hover:text-slate-400 transition-colors">
+                {questionExpanded ? "Show less" : "Show more"}
+              </span>
+            </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-3">
+            <div className="flex items-center gap-1 text-[10px] text-slate-500">
+              <span>Powered by</span>
+              <img src="/opper-logo.png" alt="Opper" className="h-3.5 w-3.5" />
+              <span className="font-medium text-slate-400">Opper</span>
+            </div>
+          </div>
+          <div className="flex shrink-0 gap-2">
+            {(session.status === "consensus" || session.status === "max_rounds") && (
+              <button
+                className="rounded-md border border-blue-500 px-3 py-1.5 text-xs text-blue-400 hover:bg-blue-500/10 disabled:opacity-50"
+                onClick={handleRunAgain}
+                disabled={runAgainLoading}
+              >
+                {runAgainLoading ? "Starting..." : "Run Again"}
+              </button>
+            )}
+            <button
+              className="rounded-md border border-slate-600 px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-700"
+              onClick={() => {
+                setViewRound(null);
+                setSessionId(null);
+              }}
+            >
+              New Roundtable
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Main content */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left: Canvas */}
+        <div className="flex flex-1 items-center justify-center p-6">
+          <div className="flex flex-col items-center gap-4" style={{ maxWidth: 600 }}>
+            <RoundtableCanvas
+              session={session}
+              thinkingModels={thinkingModels}
+              displayRound={displayRound}
+            />
+            <RoundSlider
+              totalRounds={session.rounds.length}
+              maxRounds={session.maxRounds}
+              selectedRound={viewRound}
+              onRoundChange={handleRoundChange}
+              isRunning={session.status === "running"}
+            />
+            <OptionLegend options={session.options} />
+            <StatusBar session={session} displayRound={displayRound} />
+          </div>
+        </div>
+
+        {/* Right: Transcript */}
+        <div className="w-[480px] border-l border-slate-700 p-4 overflow-y-auto">
+          <h2 className="mb-3 text-sm font-semibold text-slate-300">
+            Transcript
+          </h2>
+          <TranscriptPanel
+            session={session}
+            scrollToRound={scrollToRound}
+            onScrollHandled={() => setScrollToRound(null)}
+          />
+        </div>
+      </div>
+
+      {error && (
+        <div className="border-t border-red-800 bg-red-900/20 px-6 py-2 text-sm text-red-400">
+          {error}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default App;

@@ -107,7 +107,7 @@ export function SetupForm({ onSessionCreated }: SetupFormProps) {
   const otherByProvider = groupByProvider(otherModels);
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 p-8">
+    <div className="mx-auto max-w-3xl space-y-6 p-8">
       <h1 className="text-3xl font-bold text-white">DeliberAIt</h1>
       <p className="text-sm text-slate-400">
         Pose a question and let multiple AI models deliberate until they reach consensus.
@@ -165,69 +165,101 @@ export function SetupForm({ onSessionCreated }: SetupFormProps) {
         <label className="mb-1 block text-sm font-medium text-slate-300">
           Select Models (at least 2)
         </label>
+        {selectedModels.size > 6 && (
+          <p className="mb-2 rounded-md bg-yellow-900/30 px-2 py-1 text-xs text-yellow-400">
+            Consider selecting 6 or fewer models for faster deliberation and lower costs.
+          </p>
+        )}
         {modelsLoading ? (
           <p className="text-sm text-slate-500">Loading models...</p>
         ) : (
-          <div className="max-h-72 space-y-3 overflow-y-auto rounded-lg border border-slate-700 p-3">
-            {Object.entries(shortlistedByProvider)
-              .sort(([a], [b]) => a.localeCompare(b))
-              .map(([provider, models]) => (
-                <div key={provider}>
-                  <h4 className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    {provider}
-                  </h4>
-                  <div className="flex flex-wrap gap-2">
-                    {models.map((m) => (
-                      <button
-                        key={m.id}
-                        className={`rounded-full px-3 py-1 text-xs transition-colors ${
-                          selectedModels.has(m.id)
-                            ? "bg-blue-600 text-white"
-                            : "bg-slate-700 text-slate-300 hover:bg-slate-600"
-                        }`}
-                        onClick={() => toggleModel(m.id)}
-                      >
-                        {m.name}
-                      </button>
-                    ))}
+          <div className="flex gap-3">
+            {/* Model picker */}
+            <div className="max-h-72 min-w-0 flex-1 space-y-3 overflow-y-auto rounded-lg border border-slate-700 p-3">
+              {Object.entries(shortlistedByProvider)
+                .sort(([a], [b]) => a.localeCompare(b))
+                .map(([provider, models]) => (
+                  <div key={provider}>
+                    <h4 className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                      {provider}
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {models.map((m) => (
+                        <button
+                          key={m.id}
+                          className={`rounded-full px-3 py-1 text-xs transition-colors ${
+                            selectedModels.has(m.id)
+                              ? "bg-blue-600 text-white"
+                              : "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                          }`}
+                          onClick={() => toggleModel(m.id)}
+                        >
+                          {m.name}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
 
-            {/* Other models - collapsible */}
-            {otherModels.length > 0 && (
-              <div className="border-t border-slate-700 pt-2">
-                <button
-                  className="mb-2 text-xs font-medium text-slate-400 hover:text-slate-300"
-                  onClick={() => setShowOtherModels(!showOtherModels)}
-                >
-                  {showOtherModels ? "Hide" : "Show"} other models ({otherModels.length})
-                </button>
-                {showOtherModels &&
-                  Object.entries(otherByProvider)
-                    .sort(([a], [b]) => a.localeCompare(b))
-                    .map(([provider, models]) => (
-                      <div key={provider} className="mb-2">
-                        <h4 className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          {provider}
-                        </h4>
-                        <div className="flex flex-wrap gap-2">
-                          {models.map((m) => (
-                            <button
-                              key={m.id}
-                              className={`rounded-full px-3 py-1 text-xs transition-colors ${
-                                selectedModels.has(m.id)
-                                  ? "bg-blue-600 text-white"
-                                  : "bg-slate-700 text-slate-300 hover:bg-slate-600"
-                              }`}
-                              onClick={() => toggleModel(m.id)}
-                            >
-                              {m.name}
-                            </button>
-                          ))}
+              {/* Other models - collapsible */}
+              {otherModels.length > 0 && (
+                <div className="border-t border-slate-700 pt-2">
+                  <button
+                    className="mb-2 text-xs font-medium text-slate-400 hover:text-slate-300"
+                    onClick={() => setShowOtherModels(!showOtherModels)}
+                  >
+                    {showOtherModels ? "Hide" : "Show"} other models ({otherModels.length})
+                  </button>
+                  {showOtherModels &&
+                    Object.entries(otherByProvider)
+                      .sort(([a], [b]) => a.localeCompare(b))
+                      .map(([provider, models]) => (
+                        <div key={provider} className="mb-2">
+                          <h4 className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                            {provider}
+                          </h4>
+                          <div className="flex flex-wrap gap-2">
+                            {models.map((m) => (
+                              <button
+                                key={m.id}
+                                className={`rounded-full px-3 py-1 text-xs transition-colors ${
+                                  selectedModels.has(m.id)
+                                    ? "bg-blue-600 text-white"
+                                    : "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                                }`}
+                                onClick={() => toggleModel(m.id)}
+                              >
+                                {m.name}
+                              </button>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                </div>
+              )}
+            </div>
+
+            {/* Selected models sidebar */}
+            {selectedModels.size > 0 && (
+              <div className="sticky top-0 w-44 shrink-0 self-start rounded-lg border border-slate-700 p-2">
+                <h4 className="mb-2 text-xs font-semibold text-slate-300">
+                  Selected ({selectedModels.size})
+                </h4>
+                <ul className="max-h-56 space-y-1 overflow-y-auto">
+                  {Array.from(selectedModels).map((id) => (
+                    <li key={id} className="flex items-center justify-between gap-1">
+                      <span className="truncate text-[11px] text-slate-400" title={id}>
+                        {id.split("/").pop()}
+                      </span>
+                      <button
+                        className="shrink-0 text-[10px] text-red-400 hover:text-red-300"
+                        onClick={() => toggleModel(id)}
+                      >
+                        x
+                      </button>
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
           </div>

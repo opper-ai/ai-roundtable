@@ -14,9 +14,10 @@ export function SetupForm({ onSessionCreated }: SetupFormProps) {
     { id: "A", label: "A" },
     { id: "B", label: "B" },
   ]);
-  const [consensusPreset, setConsensusPreset] = useState<"half" | "supermajority" | "unanimous">("supermajority");
+  const [consensusPreset, setConsensusPreset] = useState<"half" | "supermajority" | "unanimous">("unanimous");
   const [maxRounds, setMaxRounds] = useState(6);
   const [contextRounds, setContextRounds] = useState<number | undefined>(undefined);
+  const [showOtherModels, setShowOtherModels] = useState(false);
   const [loading, setLoading] = useState(false);
   const [modelsLoading, setModelsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -89,14 +90,21 @@ export function SetupForm({ onSessionCreated }: SetupFormProps) {
     }
   };
 
-  // Group models by provider
-  const modelsByProvider = availableModels.reduce(
-    (acc, m) => {
-      (acc[m.provider] ??= []).push(m);
-      return acc;
-    },
-    {} as Record<string, LLMModel[]>
-  );
+  const shortlistedModels = availableModels.filter((m) => m.shortlisted);
+  const otherModels = availableModels.filter((m) => !m.shortlisted);
+
+  // Group by provider
+  const groupByProvider = (models: LLMModel[]) =>
+    models.reduce(
+      (acc, m) => {
+        (acc[m.provider] ??= []).push(m);
+        return acc;
+      },
+      {} as Record<string, LLMModel[]>
+    );
+
+  const shortlistedByProvider = groupByProvider(shortlistedModels);
+  const otherByProvider = groupByProvider(otherModels);
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 p-8">
@@ -160,8 +168,8 @@ export function SetupForm({ onSessionCreated }: SetupFormProps) {
         {modelsLoading ? (
           <p className="text-sm text-slate-500">Loading models...</p>
         ) : (
-          <div className="max-h-60 space-y-3 overflow-y-auto rounded-lg border border-slate-700 p-3">
-            {Object.entries(modelsByProvider)
+          <div className="max-h-72 space-y-3 overflow-y-auto rounded-lg border border-slate-700 p-3">
+            {Object.entries(shortlistedByProvider)
               .sort(([a], [b]) => a.localeCompare(b))
               .map(([provider, models]) => (
                 <div key={provider}>
@@ -185,6 +193,43 @@ export function SetupForm({ onSessionCreated }: SetupFormProps) {
                   </div>
                 </div>
               ))}
+
+            {/* Other models - collapsible */}
+            {otherModels.length > 0 && (
+              <div className="border-t border-slate-700 pt-2">
+                <button
+                  className="mb-2 text-xs font-medium text-slate-400 hover:text-slate-300"
+                  onClick={() => setShowOtherModels(!showOtherModels)}
+                >
+                  {showOtherModels ? "Hide" : "Show"} other models ({otherModels.length})
+                </button>
+                {showOtherModels &&
+                  Object.entries(otherByProvider)
+                    .sort(([a], [b]) => a.localeCompare(b))
+                    .map(([provider, models]) => (
+                      <div key={provider} className="mb-2">
+                        <h4 className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          {provider}
+                        </h4>
+                        <div className="flex flex-wrap gap-2">
+                          {models.map((m) => (
+                            <button
+                              key={m.id}
+                              className={`rounded-full px-3 py-1 text-xs transition-colors ${
+                                selectedModels.has(m.id)
+                                  ? "bg-blue-600 text-white"
+                                  : "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                              }`}
+                              onClick={() => toggleModel(m.id)}
+                            >
+                              {m.name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+              </div>
+            )}
           </div>
         )}
         <p className="mt-1 text-xs text-slate-500">

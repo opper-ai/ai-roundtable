@@ -76,4 +76,5 @@ export interface LLMModel {
   id: string;
   name: string;
   provider: string;
+  shortlisted?: boolean;
 }

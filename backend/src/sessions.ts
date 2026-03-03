@@ -22,7 +22,7 @@ export function createSession(params: {
     options: params.options,
     models: params.models,
     consensusThreshold:
-      params.consensusThreshold ?? Math.ceil(modelCount * (2 / 3)),
+      params.consensusThreshold ?? modelCount,
     maxRounds: params.maxRounds ?? 6,
     contextRounds: params.contextRounds,
     rounds: [],

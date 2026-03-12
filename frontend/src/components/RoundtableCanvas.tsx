@@ -77,24 +77,24 @@ export function RoundtableCanvas({
       >
         {showLiveStatus && session.status === "consensus" && (
           <>
-            <span className="text-sm font-semibold text-emerald-600">
+            <span className="text-sm font-semibold text-[#0D5445]">
               Consensus: {session.winningOption}
             </span>
             {(() => {
               const label = session.options.find(o => o.id === session.winningOption)?.label;
               return label && label !== session.winningOption ? (
-                <span className="text-xs text-emerald-500/70">{label}</span>
+                <span className="text-xs text-[#0D5445]/70">{label}</span>
               ) : null;
             })()}
           </>
         )}
         {showLiveStatus && session.status === "running" && (
-          <span className="text-xs text-gray-400">
+          <span className="text-xs text-[#3C3CAF]">
             Round {session.rounds.length || 1}
           </span>
         )}
         {showLiveStatus && session.status === "max_rounds" && (
-          <span className="text-sm font-semibold text-amber-600">No consensus</span>
+          <span className="text-sm font-semibold text-[#6B3A1A]">No consensus</span>
         )}
         {isHistorical && (
           <span className="text-xs text-gray-400">

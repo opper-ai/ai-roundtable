@@ -1,4 +1,4 @@
-import { getVoteColor } from "./VoteChip";
+import { getVoteBgColor, getVoteColor, getVoteTextColor } from "./VoteChip";
 import type { VoteOption } from "../types";
 
 interface OptionLegendProps {
@@ -11,13 +11,12 @@ export function OptionLegend({ options }: OptionLegendProps) {
       {options.map((opt) => (
         <div key={opt.id} className="flex items-center gap-1.5 text-xs text-gray-600">
           <span
-            className="inline-block h-2.5 w-2.5 rounded-full"
-            style={{ backgroundColor: getVoteColor(opt.id) }}
-          />
-          <span className="font-semibold" style={{ color: getVoteColor(opt.id) }}>
+            className="inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold"
+            style={{ backgroundColor: getVoteBgColor(opt.id), color: getVoteTextColor(opt.id) }}
+          >
             {opt.id}
           </span>
-          <span className="text-gray-400">
+          <span className="font-medium" style={{ color: getVoteColor(opt.id) }}>
             {opt.label !== opt.id ? opt.label : ""}
           </span>
         </div>

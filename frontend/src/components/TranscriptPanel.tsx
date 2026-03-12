@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Markdown from "react-markdown";
-import { VoteChip, getVoteColor } from "./VoteChip";
+import { VoteChip, getVoteBgColor, getVoteTextColor } from "./VoteChip";
 import type { RoundtableSession } from "../types";
 
 function generateMarkdown(session: RoundtableSession): string {
@@ -185,49 +185,67 @@ export function TranscriptPanel({ session, scrollToRound, onScrollHandled }: Tra
 
       {/* Final summary */}
       {session.finalSummary && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-          <h3 className="mb-2 text-sm font-semibold text-emerald-700">Final Summary</h3>
-          <p className="mb-3 text-sm leading-relaxed text-gray-700">
+        <div className="rounded-xl border border-gray-200 bg-gradient-to-br from-[#8CECF2]/5 to-[#FFB186]/5 p-4">
+          <h3 className="mb-2 text-sm font-semibold text-[#1B2E40]">Final Summary</h3>
+          <p className="mb-4 text-sm leading-relaxed text-gray-700">
             {session.finalSummary.narrative}
           </p>
-          <div className="space-y-1.5">
-            <h4 className="text-xs font-semibold text-gray-500">Strongest arguments per option:</h4>
+
+          {/* Strongest arguments per option */}
+          <div className="space-y-2">
+            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Strongest arguments</h4>
             {Object.entries(session.finalSummary.strongestPerOption).map(([optId, arg]) => (
-              <div key={optId} className="flex gap-2 text-xs">
-                <span className="font-bold" style={{ color: getVoteColor(optId) }}>
+              <div key={optId} className="flex gap-3 text-xs">
+                <span
+                  className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold"
+                  style={{ backgroundColor: getVoteBgColor(optId), color: getVoteTextColor(optId) }}
+                >
                   {optId}
                 </span>
                 <span className="text-gray-600">{arg}</span>
               </div>
             ))}
           </div>
+
+          {/* Key turning points */}
           {session.finalSummary.keyTurningPoints.length > 0 && (
-            <div className="mt-3 space-y-1">
-              <h4 className="text-xs font-semibold text-gray-500">Key turning points:</h4>
+            <div className="mt-4 space-y-1">
+              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Key turning points</h4>
               {session.finalSummary.keyTurningPoints.map((point, i) => (
                 <p key={i} className="text-xs text-gray-500">— {point}</p>
               ))}
             </div>
           )}
+
+          {/* Model decisions — table grid */}
           {session.finalSummary.modelDecisions && session.finalSummary.modelDecisions.length > 0 && (
-            <div className="mt-3 space-y-2">
-              <h4 className="text-xs font-semibold text-gray-500">Model decisions:</h4>
-              {session.finalSummary.modelDecisions.map((decision, i) => (
-                <div key={i} className="flex items-start gap-2 text-xs">
-                  <span className="font-semibold text-[#1B2E40] shrink-0">{decision.model}</span>
-                  <div className="text-gray-600">
-                    <span>
-                      voted <span className="font-bold" style={{ color: getVoteColor(decision.finalPosition) }}>{decision.finalPosition}</span>
+            <div className="mt-4">
+              <h4 className="mb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Model decisions</h4>
+              <div className="divide-y divide-gray-100 rounded-lg border border-gray-100 bg-white">
+                {session.finalSummary.modelDecisions.map((decision, i) => (
+                  <div key={i} className="flex items-start gap-3 px-3 py-2.5">
+                    {/* Vote badge */}
+                    <span
+                      className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold"
+                      style={{ backgroundColor: getVoteBgColor(decision.finalPosition), color: getVoteTextColor(decision.finalPosition) }}
+                    >
+                      {decision.finalPosition}
                     </span>
-                    {decision.changedMind && (
-                      <span className="text-amber-600">
-                        {" "}(changed mind{decision.influencedBy ? `, influenced by ${decision.influencedBy}` : ""})
-                      </span>
-                    )}
-                    <span className="text-gray-400"> — {decision.reasoning}</span>
+                    {/* Model name + reasoning */}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold text-[#1B2E40]">{decision.model}</span>
+                        {decision.changedMind && (
+                          <span className="rounded-full bg-[#FFB186]/20 px-1.5 py-0.5 text-[10px] font-medium text-[#6B3A1A]">
+                            changed mind{decision.influencedBy ? ` · ${decision.influencedBy}` : ""}
+                          </span>
+                        )}
+                      </div>
+                      <p className="mt-0.5 text-xs text-gray-500 leading-relaxed">{decision.reasoning}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -297,10 +315,10 @@ export function TranscriptPanel({ session, scrollToRound, onScrollHandled }: Tra
                             {session.options.find(o => o.id === resp.vote)?.label ?? resp.vote}
                           </span>
                           {resp.voteChanged && (
-                            <span className="text-xs text-amber-600">
+                            <span className="rounded-full bg-[#FFB186]/20 px-1.5 py-0.5 text-[10px] font-medium text-[#6B3A1A]">
                               changed
                               {resp.attributedTo && (
-                                <> (convinced by {resp.attributedTo.split("/").pop()})</>
+                                <> · {resp.attributedTo.split("/").pop()}</>
                               )}
                             </span>
                           )}
@@ -313,8 +331,8 @@ export function TranscriptPanel({ session, scrollToRound, onScrollHandled }: Tra
 
                     {/* Round summary */}
                     {roundSummary && (
-                      <div className="rounded-lg border border-blue-100 bg-blue-50 p-3">
-                        <h4 className="mb-1.5 text-xs font-semibold text-blue-700">Round Summary</h4>
+                      <div className="rounded-lg border border-[#8CECF2]/30 bg-[#8CECF2]/5 p-3">
+                        <h4 className="mb-1.5 text-xs font-semibold text-[#0D4F54]">Round Summary</h4>
                         <ul className="mb-2 space-y-1 text-sm text-gray-700">
                           {roundSummary.keyArguments.map((arg, i) => (
                             <li key={i}>• {arg}</li>
@@ -323,7 +341,7 @@ export function TranscriptPanel({ session, scrollToRound, onScrollHandled }: Tra
                         {roundSummary.voteChanges.length > 0 && (
                           <div className="mb-2 space-y-0.5">
                             {roundSummary.voteChanges.map((change, i) => (
-                              <p key={i} className="text-xs text-amber-600">↻ {change}</p>
+                              <p key={i} className="text-xs text-[#6B3A1A]">↻ {change}</p>
                             ))}
                           </div>
                         )}

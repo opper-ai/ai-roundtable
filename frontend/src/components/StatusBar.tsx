@@ -1,5 +1,5 @@
 import type { RoundtableSession } from "../types";
-import { getVoteColor } from "./VoteChip";
+import { getVoteBgColor, getVoteColor, getVoteTextColor } from "./VoteChip";
 
 interface StatusBarProps {
   session: RoundtableSession;
@@ -22,7 +22,7 @@ export function StatusBar({ session, displayRound }: StatusBarProps) {
         </span>
         <span>
           {session.status === "consensus" && (
-            <span className="font-semibold text-emerald-600">
+            <span className="font-semibold text-[#0D5445]">
               Consensus: {session.winningOption}
               {(() => {
                 const label = session.options.find(o => o.id === session.winningOption)?.label;
@@ -31,7 +31,7 @@ export function StatusBar({ session, displayRound }: StatusBarProps) {
             </span>
           )}
           {session.status === "max_rounds" && (
-            <span className="text-amber-600">Max rounds reached</span>
+            <span className="font-semibold text-[#6B3A1A]">No consensus</span>
           )}
           {session.status === "running" && (
             <span className="text-[#3C3CAF]">Deliberating...</span>
@@ -50,10 +50,11 @@ export function StatusBar({ session, displayRound }: StatusBarProps) {
             return (
               <div
                 key={optionId}
-                className="flex items-center justify-center text-xs font-bold text-white transition-all duration-500"
+                className="flex items-center justify-center text-xs font-bold transition-all duration-500"
                 style={{
                   width: `${pct}%`,
-                  backgroundColor: getVoteColor(optionId),
+                  backgroundColor: getVoteBgColor(optionId),
+                  color: getVoteTextColor(optionId),
                 }}
               >
                 {pct > 20

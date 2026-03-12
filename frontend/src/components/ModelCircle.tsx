@@ -63,19 +63,31 @@ export function ModelCircle({
             : {}
         }
       >
-        {/* Provider initial — centered in circle */}
-        <div
-          className="flex items-center justify-center rounded-full font-bold"
-          style={{
-            width: providerSize,
-            height: providerSize,
-            backgroundColor: provider.bgColor,
-            color: provider.color,
-            fontSize: providerSize * 0.5,
-          }}
-        >
-          {provider.initial}
-        </div>
+        {/* Provider logo or initial fallback — centered in circle */}
+        {provider.logo ? (
+          <img
+            src={provider.logo}
+            alt={provider.name}
+            className="object-contain"
+            style={{
+              width: providerSize * 1.6,
+              height: providerSize * 1.6,
+            }}
+          />
+        ) : (
+          <div
+            className="flex items-center justify-center rounded-full font-bold"
+            style={{
+              width: providerSize,
+              height: providerSize,
+              backgroundColor: provider.bgColor,
+              color: provider.color,
+              fontSize: providerSize * 0.5,
+            }}
+          >
+            {provider.initial}
+          </div>
+        )}
 
         {/* Vote badge — positioned bottom-right */}
         {vote && (

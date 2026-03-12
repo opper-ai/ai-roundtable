@@ -68,7 +68,7 @@ function App() {
       <header className="border-b border-slate-700 px-6 py-3" ref={headerRef}>
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
-            <h1 className="text-lg font-bold text-white">DeliberAIt</h1>
+            <h1 className="text-lg font-bold text-white">AI-Roundtable</h1>
             <div
               className="group mt-0.5 cursor-pointer"
               onClick={() => setQuestionExpanded((v) => !v)}

@@ -108,7 +108,7 @@ export function SetupForm({ onSessionCreated }: SetupFormProps) {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-8">
-      <h1 className="text-3xl font-bold text-white">DeliberAIt</h1>
+      <h1 className="text-3xl font-bold text-white">AI-Roundtable</h1>
       <p className="text-sm text-slate-400">
         Pose a question and let multiple AI models deliberate until they reach consensus.
       </p>

@@ -61,7 +61,7 @@ export async function runRoundtable(
       const instructions = buildInstructions(session, roundNum, modelId);
       try {
         const result = await client.call({
-          name: "deliberate",
+          name: "roundtable",
           model: modelId,
           instructions,
           input: {

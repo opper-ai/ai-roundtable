@@ -124,7 +124,7 @@ export function SetupForm({ onSessionCreated }: SetupFormProps) {
         <div className="flex items-baseline justify-between">
           <h1 className="text-3xl font-bold text-[#1B2E40]">AI Roundtable</h1>
           <button
-            className="text-xs text-[#3C3CAF] hover:text-[#2E2E8F] transition-colors"
+            className="text-xs text-[#3C3CAF] underline decoration-[#3C3CAF]/30 hover:decoration-[#3C3CAF] hover:text-[#2E2E8F] transition-colors"
             onClick={methodology.show}
           >
             How it works
@@ -265,7 +265,7 @@ export function SetupForm({ onSessionCreated }: SetupFormProps) {
         </label>
         {selectedModels.size > 6 && (
           <p className="mb-2 rounded-lg bg-amber-50 border border-amber-200 px-2 py-1 text-xs text-amber-700">
-            Consider selecting 6 or fewer models for faster deliberation and lower costs.
+            Consider selecting 6 or fewer models for faster deliberation.
           </p>
         )}
         {modelsLoading ? (

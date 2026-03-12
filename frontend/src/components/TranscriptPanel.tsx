@@ -152,7 +152,7 @@ export function TranscriptPanel({ session, scrollToRound, onScrollHandled }: Tra
     <div className="flex flex-col gap-3">
       {session.rounds.length > 0 && (
         <button
-          className="self-end rounded-md border border-slate-600 px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-700"
+          className="self-end rounded-lg border border-gray-200 px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-50 transition-colors"
           onClick={() => downloadTranscript(session)}
         >
           Download Transcript
@@ -162,9 +162,9 @@ export function TranscriptPanel({ session, scrollToRound, onScrollHandled }: Tra
       {/* Final summary loading */}
       {!session.finalSummary &&
         (session.status === "consensus" || session.status === "max_rounds") && (
-        <div className="flex items-center gap-2.5 rounded-lg border border-slate-700 bg-slate-800/50 px-4 py-3">
+        <div className="flex items-center gap-2.5 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
           <svg
-            className="h-4 w-4 animate-spin text-slate-400"
+            className="h-4 w-4 animate-spin text-gray-400"
             viewBox="0 0 24 24"
             fill="none"
           >
@@ -179,33 +179,54 @@ export function TranscriptPanel({ session, scrollToRound, onScrollHandled }: Tra
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
             />
           </svg>
-          <span className="text-xs text-slate-400">Generating final summary...</span>
+          <span className="text-xs text-gray-500">Generating final summary...</span>
         </div>
       )}
 
       {/* Final summary */}
       {session.finalSummary && (
-        <div className="rounded-lg border border-green-800/30 bg-green-900/20 p-4">
-          <h3 className="mb-2 text-sm font-semibold text-green-400">Final Summary</h3>
-          <p className="mb-3 text-sm leading-relaxed text-slate-300">
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+          <h3 className="mb-2 text-sm font-semibold text-emerald-700">Final Summary</h3>
+          <p className="mb-3 text-sm leading-relaxed text-gray-700">
             {session.finalSummary.narrative}
           </p>
           <div className="space-y-1.5">
-            <h4 className="text-xs font-semibold text-slate-400">Strongest arguments per option:</h4>
+            <h4 className="text-xs font-semibold text-gray-500">Strongest arguments per option:</h4>
             {Object.entries(session.finalSummary.strongestPerOption).map(([optId, arg]) => (
               <div key={optId} className="flex gap-2 text-xs">
                 <span className="font-bold" style={{ color: getVoteColor(optId) }}>
                   {optId}
                 </span>
-                <span className="text-slate-300">{arg}</span>
+                <span className="text-gray-600">{arg}</span>
               </div>
             ))}
           </div>
           {session.finalSummary.keyTurningPoints.length > 0 && (
             <div className="mt-3 space-y-1">
-              <h4 className="text-xs font-semibold text-slate-400">Key turning points:</h4>
+              <h4 className="text-xs font-semibold text-gray-500">Key turning points:</h4>
               {session.finalSummary.keyTurningPoints.map((point, i) => (
-                <p key={i} className="text-xs text-slate-400">— {point}</p>
+                <p key={i} className="text-xs text-gray-500">— {point}</p>
+              ))}
+            </div>
+          )}
+          {session.finalSummary.modelDecisions && session.finalSummary.modelDecisions.length > 0 && (
+            <div className="mt-3 space-y-2">
+              <h4 className="text-xs font-semibold text-gray-500">Model decisions:</h4>
+              {session.finalSummary.modelDecisions.map((decision, i) => (
+                <div key={i} className="flex items-start gap-2 text-xs">
+                  <span className="font-semibold text-[#1B2E40] shrink-0">{decision.model}</span>
+                  <div className="text-gray-600">
+                    <span>
+                      voted <span className="font-bold" style={{ color: getVoteColor(decision.finalPosition) }}>{decision.finalPosition}</span>
+                    </span>
+                    {decision.changedMind && (
+                      <span className="text-amber-600">
+                        {" "}(changed mind{decision.influencedBy ? `, influenced by ${decision.influencedBy}` : ""})
+                      </span>
+                    )}
+                    <span className="text-gray-400"> — {decision.reasoning}</span>
+                  </div>
+                </div>
               ))}
             </div>
           )}
@@ -228,24 +249,24 @@ export function TranscriptPanel({ session, scrollToRound, onScrollHandled }: Tra
           <div
             key={round.roundNumber}
             ref={(el) => setRoundRef(round.roundNumber, el)}
-            className="rounded-lg bg-slate-800/50"
+            className="rounded-xl border border-gray-200 bg-white"
           >
             {/* Clickable header */}
             <button
-              className="flex w-full items-center gap-2 px-4 py-3 text-left hover:bg-slate-700/30 transition-colors rounded-lg"
+              className="flex w-full items-center gap-2 px-4 py-3 text-left hover:bg-gray-50 transition-colors rounded-xl"
               onClick={() => toggleRound(round.roundNumber)}
             >
               <span
-                className="text-[10px] text-slate-500 transition-transform"
+                className="text-[10px] text-gray-400 transition-transform"
                 style={{ transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)" }}
               >
                 ▶
               </span>
-              <span className="text-sm font-semibold text-slate-300">
+              <span className="text-sm font-semibold text-[#1B2E40]">
                 Round {round.roundNumber}
               </span>
               {tallyStr && (
-                <span className="text-xs font-normal text-slate-500">
+                <span className="text-xs font-normal text-gray-400">
                   {tallyStr}
                 </span>
               )}
@@ -265,18 +286,18 @@ export function TranscriptPanel({ session, scrollToRound, onScrollHandled }: Tra
                     {round.responses.map((resp) => (
                       <div
                         key={resp.modelId}
-                        className="rounded-md bg-slate-900/50 p-3"
+                        className="rounded-lg border border-gray-100 bg-gray-50 p-3"
                       >
                         <div className="mb-1.5 flex items-center gap-2">
-                          <span className="text-xs font-medium text-slate-400">
+                          <span className="text-xs font-medium text-gray-600">
                             {resp.modelLabel}
                           </span>
                           <VoteChip vote={resp.vote} />
-                          <span className="text-xs text-slate-400">
+                          <span className="text-xs text-gray-500">
                             {session.options.find(o => o.id === resp.vote)?.label ?? resp.vote}
                           </span>
                           {resp.voteChanged && (
-                            <span className="text-xs text-yellow-400">
+                            <span className="text-xs text-amber-600">
                               changed
                               {resp.attributedTo && (
                                 <> (convinced by {resp.attributedTo.split("/").pop()})</>
@@ -284,7 +305,7 @@ export function TranscriptPanel({ session, scrollToRound, onScrollHandled }: Tra
                             </span>
                           )}
                         </div>
-                        <div className="prose prose-sm prose-invert max-w-none text-slate-300 prose-headings:text-slate-200 prose-headings:text-sm prose-headings:font-semibold prose-strong:text-slate-200 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 prose-p:my-1">
+                        <div className="prose prose-sm max-w-none text-gray-700 prose-headings:text-[#1B2E40] prose-headings:text-sm prose-headings:font-semibold prose-strong:text-[#1B2E40] prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 prose-p:my-1">
                           <Markdown>{resp.reasoning}</Markdown>
                         </div>
                       </div>
@@ -292,9 +313,9 @@ export function TranscriptPanel({ session, scrollToRound, onScrollHandled }: Tra
 
                     {/* Round summary */}
                     {roundSummary && (
-                      <div className="rounded-md border border-blue-800/30 bg-blue-900/20 p-3">
-                        <h4 className="mb-1.5 text-xs font-semibold text-blue-400">Round Summary</h4>
-                        <ul className="mb-2 space-y-1 text-sm text-slate-300">
+                      <div className="rounded-lg border border-blue-100 bg-blue-50 p-3">
+                        <h4 className="mb-1.5 text-xs font-semibold text-blue-700">Round Summary</h4>
+                        <ul className="mb-2 space-y-1 text-sm text-gray-700">
                           {roundSummary.keyArguments.map((arg, i) => (
                             <li key={i}>• {arg}</li>
                           ))}
@@ -302,11 +323,11 @@ export function TranscriptPanel({ session, scrollToRound, onScrollHandled }: Tra
                         {roundSummary.voteChanges.length > 0 && (
                           <div className="mb-2 space-y-0.5">
                             {roundSummary.voteChanges.map((change, i) => (
-                              <p key={i} className="text-xs text-yellow-400/80">↻ {change}</p>
+                              <p key={i} className="text-xs text-amber-600">↻ {change}</p>
                             ))}
                           </div>
                         )}
-                        <p className="text-xs text-slate-400 italic">
+                        <p className="text-xs text-gray-500 italic">
                           {roundSummary.outlook}
                         </p>
                       </div>
@@ -320,7 +341,7 @@ export function TranscriptPanel({ session, scrollToRound, onScrollHandled }: Tra
       })}
 
       {rounds.length === 0 && (
-        <p className="text-center text-sm text-slate-500">
+        <p className="text-center text-sm text-gray-400">
           Waiting for first round...
         </p>
       )}

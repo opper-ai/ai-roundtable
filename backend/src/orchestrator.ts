@@ -12,7 +12,24 @@ import { generateRoundSummary, generateFinalSummary } from "./summarizer.js";
 
 type EventCallback = (event: RoundtableEvent) => void;
 
-export async function runRoundtable(
+/**
+ * Top-level dispatcher — routes to the right runner based on session mode.
+ */
+export async function runSession(
+  session: RoundtableSession,
+  client: LLMClient,
+  emit: EventCallback
+): Promise<void> {
+  if (session.mode === "expert_panel") {
+    return runExpertPanel(session, client, emit);
+  }
+  return runRoundtable(session, client, emit);
+}
+
+/**
+ * Expert Panel: single round, minimal prompt, no deliberation.
+ */
+async function runExpertPanel(
   session: RoundtableSession,
   client: LLMClient,
   emit: EventCallback
@@ -20,7 +37,141 @@ export async function runRoundtable(
   const optionIds = session.options.map((o) => o.id);
   const outputSchema = modelRoundOutputJsonSchema(optionIds);
 
-  // Create a trace for the whole session if the client supports it
+  let traceId: string | undefined;
+  if (client.createTrace) {
+    const trace = await client.createTrace(`expert-panel/${session.id}`, {
+      question: session.question,
+      models: session.models,
+      options: session.options,
+    });
+    traceId = trace.id;
+    session.traceId = traceId;
+  }
+
+  session.status = "running";
+  emit({ type: "session_created", session });
+  emit({ type: "round_started", roundNumber: 1 });
+
+  const round: Round = {
+    roundNumber: 1,
+    responses: [],
+    startedAt: new Date().toISOString(),
+    voteDistribution: {},
+  };
+
+  const modelCalls = session.models.map(async (modelId) => {
+    const instructions = buildExpertPanelInstructions(session, modelId);
+    try {
+      const result = await client.call({
+        name: "expert-panel",
+        model: modelId,
+        instructions,
+        input: {
+          question: session.question,
+          options: session.options,
+        },
+        outputSchema: outputSchema as Record<string, unknown>,
+        traceContext: traceId
+          ? {
+              parentId: traceId,
+              name: modelId.replace(/\//g, "-"),
+              tags: { session: session.id, round: "1", model: modelId },
+            }
+          : undefined,
+      });
+
+      const output = result.result as {
+        vote: string;
+        reasoning: string;
+        attributedTo: string | null;
+      };
+
+      logModelCall(session.id, 1, modelId, instructions, {
+        question: session.question,
+        options: session.options,
+      }, output);
+
+      const response: ModelResponse = {
+        modelId,
+        modelLabel: modelId.split("/").pop() ?? modelId,
+        vote: output.vote,
+        reasoning: output.reasoning,
+        voteChanged: false,
+        spanId: result.spanId,
+        completedAt: new Date().toISOString(),
+      };
+
+      round.responses.push(response);
+      emit({ type: "model_response", roundNumber: 1, response });
+      return response;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : "Unknown error";
+      console.error(`Model ${modelId} failed:`, errorMsg);
+      logModelCall(session.id, 1, modelId, instructions, {
+        question: session.question,
+        options: session.options,
+      }, null, errorMsg);
+
+      const response: ModelResponse = {
+        modelId,
+        modelLabel: modelId.split("/").pop() ?? modelId,
+        vote: "ERROR",
+        reasoning: `Failed to respond: ${errorMsg}`,
+        voteChanged: false,
+        completedAt: new Date().toISOString(),
+      };
+
+      round.responses.push(response);
+      emit({ type: "model_response", roundNumber: 1, response });
+      return response;
+    }
+  });
+
+  await Promise.allSettled(modelCalls);
+
+  for (const r of round.responses) {
+    if (r.vote !== "ERROR") {
+      round.voteDistribution[r.vote] = (round.voteDistribution[r.vote] ?? 0) + 1;
+    }
+  }
+  round.completedAt = new Date().toISOString();
+  session.rounds.push(round);
+  session.updatedAt = new Date().toISOString();
+
+  emit({ type: "round_completed", round });
+
+  // Expert panel: always max_rounds (1 round done)
+  session.status = "max_rounds";
+  logSessionSummary(session.id, session);
+  emit({ type: "max_rounds", session });
+
+  let finalSummary;
+  try {
+    finalSummary = await generateFinalSummary(session, client, traceId);
+    emit({ type: "final_summary", summary: finalSummary });
+  } catch (err) {
+    console.error("Final summary failed:", err);
+  }
+
+  if (client.closeTrace && traceId) {
+    await client.closeTrace(traceId, {
+      result: "expert_panel_complete",
+      ...(finalSummary ? { summary: finalSummary } : {}),
+    });
+  }
+}
+
+/**
+ * Roundtable Discussion: multi-round deliberation with blind first round.
+ */
+async function runRoundtable(
+  session: RoundtableSession,
+  client: LLMClient,
+  emit: EventCallback
+): Promise<void> {
+  const optionIds = session.options.map((o) => o.id);
+  const outputSchema = modelRoundOutputJsonSchema(optionIds);
+
   let traceId: string | undefined;
   if (client.createTrace) {
     const trace = await client.createTrace(`roundtable/${session.id}`, {
@@ -38,7 +189,6 @@ export async function runRoundtable(
   for (let roundNum = 1; roundNum <= session.maxRounds; roundNum++) {
     emit({ type: "round_started", roundNumber: roundNum });
 
-    // Create a round-level span nested under the session trace
     let roundSpanId: string | undefined;
     if (client.createTrace && traceId) {
       const roundTrace = await client.createTrace(
@@ -56,9 +206,8 @@ export async function runRoundtable(
       voteDistribution: {},
     };
 
-    // Call all models in parallel
     const modelCalls = session.models.map(async (modelId) => {
-      const instructions = buildInstructions(session, roundNum, modelId);
+      const instructions = buildRoundtableInstructions(session, roundNum, modelId);
       try {
         const result = await client.call({
           name: "roundtable",
@@ -140,7 +289,6 @@ export async function runRoundtable(
 
     await Promise.allSettled(modelCalls);
 
-    // Compute vote distribution
     for (const r of round.responses) {
       if (r.vote !== "ERROR") {
         round.voteDistribution[r.vote] =
@@ -151,10 +299,8 @@ export async function runRoundtable(
     session.rounds.push(round);
     session.updatedAt = new Date().toISOString();
 
-    // Check consensus
     const winner = checkConsensus(round, session.consensusThreshold);
 
-    // Close the round span with vote distribution
     if (client.closeTrace && roundSpanId) {
       await client.closeTrace(roundSpanId, {
         voteDistribution: round.voteDistribution,
@@ -172,13 +318,13 @@ export async function runRoundtable(
       .catch((err) => {
         console.error(`Round ${roundNum} summary failed:`, err);
       });
+
     if (winner) {
       session.status = "consensus";
       session.winningOption = winner;
       logSessionSummary(session.id, session);
       emit({ type: "consensus", session });
 
-      // Await final summary before closing trace
       let finalSummary;
       try {
         finalSummary = await generateFinalSummary(session, client, traceId);
@@ -196,7 +342,6 @@ export async function runRoundtable(
       }
       return;
     }
-
   }
 
   // Max rounds reached without consensus
@@ -204,7 +349,6 @@ export async function runRoundtable(
   logSessionSummary(session.id, session);
   emit({ type: "max_rounds", session });
 
-  // Await final summary before closing trace
   let finalSummary;
   try {
     finalSummary = await generateFinalSummary(session, client, traceId);
@@ -222,7 +366,53 @@ export async function runRoundtable(
   }
 }
 
-function buildInstructions(
+// --- Prompt builders ---
+
+/**
+ * Expert Panel: minimal prompt, no mention of other models or panels.
+ */
+function buildExpertPanelInstructions(
+  session: RoundtableSession,
+  _modelId: string
+): string {
+  const optionList = session.options
+    .map((o) => `${o.id}: ${o.label}`)
+    .join("\n");
+
+  return `Answer the following question. Provide your vote and a clear, well-reasoned argument for your position.
+
+Question: ${session.question}
+
+The available options are:
+${optionList}
+
+Provide your vote (must be exactly one of the option IDs) and your reasoning. Set attributedTo to null.`;
+}
+
+/**
+ * Roundtable Round 1: blind — no mention of roundtable, other models, or deliberation.
+ */
+function buildRound1Instructions(
+  session: RoundtableSession
+): string {
+  const optionList = session.options
+    .map((o) => `${o.id}: ${o.label}`)
+    .join("\n");
+
+  return `Answer the following question. Provide your vote and a compelling argument with strong arguments for your position.
+
+Question: ${session.question}
+
+The available options are:
+${optionList}
+
+Provide your vote (must be exactly one of the option IDs) and your reasoning. Set attributedTo to null.`;
+}
+
+/**
+ * Roundtable Round 2: informed — models see all prior responses and can change their mind.
+ */
+function buildRound2Instructions(
   session: RoundtableSession,
   roundNum: number,
   modelId: string
@@ -232,25 +422,18 @@ function buildInstructions(
     .join("\n");
 
   const modelLabel = modelId.split("/").pop() ?? modelId;
-  const otherModels = session.models
-    .filter((m) => m !== modelId)
-    .map((m) => m.split("/").pop() ?? m)
+
+  // Find this model's own previous response
+  const ownPreviousResponse = findPreviousResponse(session, modelId);
+  const ownVoteHistory = session.rounds
+    .map((round) => {
+      const resp = round.responses.find((r) => r.modelId === modelId);
+      return resp ? `Round ${round.roundNumber}: ${resp.vote}` : null;
+    })
+    .filter(Boolean)
     .join(", ");
 
-  const identity = `You are ${modelLabel}, participating in an AI roundtable deliberation with ${otherModels}.`;
-
-  if (roundNum === 1) {
-    return `${identity} You must vote on the following question and provide your reasoning.
-
-Question: ${session.question}
-
-The available options are:
-${optionList}
-
-Provide your vote (must be exactly one of the option IDs) and a compelling argument. This is round 1, so set attributedTo to null.`;
-  }
-
-  // Build history of prior rounds (sliding window if contextRounds is set)
+  // Build history of all prior responses
   const allRounds = session.rounds;
   const relevantRounds = session.contextRounds
     ? allRounds.slice(-session.contextRounds)
@@ -264,35 +447,45 @@ Provide your vote (must be exactly one of the option IDs) and a compelling argum
   for (const round of relevantRounds) {
     const roundArgs = round.responses
       .map((r) => {
-        const who = r.modelId === modelId ? `${r.modelId} (you)` : r.modelId;
+        const who = r.modelId === modelId ? `${r.modelLabel} (you)` : r.modelLabel;
         return `[${who}] voted "${r.vote}":\n${r.reasoning}`;
       })
       .join("\n\n---\n\n");
     historyParts.push(`### Round ${round.roundNumber}\n\n${roundArgs}`);
   }
 
-  // Find this model's own vote history
-  const ownVotes = session.rounds
-    .map((round) => {
-      const resp = round.responses.find((r) => r.modelId === modelId);
-      return resp ? `Round ${round.roundNumber}: ${resp.vote}` : null;
-    })
-    .filter(Boolean)
-    .join(", ");
+  const isLastRound = roundNum >= session.maxRounds;
+  const finalRoundNote = isLastRound
+    ? "\n\nThis is the FINAL round. Make your last case. This is your last opportunity to present your arguments."
+    : "\n\nYou have one last chance to put your final arguments — address other models by name if you want to convince them about specifics.";
 
-  return `${identity} This is round ${roundNum}.
+  return `You are ${modelLabel}. You previously answered the following question:
 
 Question: ${session.question}
 
 The available options are:
 ${optionList}
 
-Your vote history: ${ownVotes}
+Your vote history: ${ownVoteHistory}
+${ownPreviousResponse ? `Your previous argument: ${ownPreviousResponse.reasoning.slice(0, 500)}` : ""}
 
-Deliberation so far:
+Here is what all models responded in the deliberation so far:
 ${historyParts.join("\n\n")}
 
-Reconsider your position carefully. You may change your vote if you find another model's argument more compelling. If you change your vote, set attributedTo to the model ID that convinced you. Be persuasive in your own argument — try to change other models' minds.`;
+Did any of the other models' arguments convince you to change your position? If you changed your mind, explain what arguments convinced you and which model influenced you. If you maintained your position, explain why the other arguments were not compelling enough.${finalRoundNote}
+
+If you change your vote, set attributedTo to the model ID that convinced you. Otherwise set it to null.`;
+}
+
+function buildRoundtableInstructions(
+  session: RoundtableSession,
+  roundNum: number,
+  modelId: string
+): string {
+  if (roundNum === 1) {
+    return buildRound1Instructions(session);
+  }
+  return buildRound2Instructions(session, roundNum, modelId);
 }
 
 function findPreviousVote(
@@ -302,6 +495,17 @@ function findPreviousVote(
   for (let i = session.rounds.length - 1; i >= 0; i--) {
     const r = session.rounds[i].responses.find((r) => r.modelId === modelId);
     if (r) return r.vote;
+  }
+  return null;
+}
+
+function findPreviousResponse(
+  session: RoundtableSession,
+  modelId: string
+): ModelResponse | null {
+  for (let i = session.rounds.length - 1; i >= 0; i--) {
+    const r = session.rounds[i].responses.find((r) => r.modelId === modelId);
+    if (r) return r;
   }
   return null;
 }

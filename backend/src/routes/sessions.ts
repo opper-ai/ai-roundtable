@@ -5,13 +5,13 @@ import {
   sessionStore,
   emitSessionEvent,
 } from "../sessions.js";
-import { runRoundtable } from "../orchestrator.js";
+import { runSession } from "../orchestrator.js";
 
 export function createSessionsRouter(client: LLMClient): Router {
   const router = Router();
 
   router.post("/api/sessions", (req, res) => {
-    const { question, models, options, consensusThreshold, maxRounds, contextRounds } =
+    const { question, models, options, mode, consensusThreshold, maxRounds, contextRounds } =
       req.body;
 
     if (!question || !models?.length || !options?.length) {
@@ -25,13 +25,14 @@ export function createSessionsRouter(client: LLMClient): Router {
       question,
       models,
       options,
+      mode,
       consensusThreshold,
       maxRounds,
       contextRounds,
     });
 
-    // Start the roundtable loop async
-    runRoundtable(session, client, (event) => {
+    // Start the session loop async
+    runSession(session, client, (event) => {
       emitSessionEvent(session.id, event);
     }).catch((err) => {
       session.status = "error";

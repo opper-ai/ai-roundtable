@@ -67,7 +67,7 @@ export async function generateFinalSummary(
         .join(", ");
       const responses = round.responses
         .map((r) => {
-          const changed = r.voteChanged ? " (CHANGED)" : "";
+          const changed = r.voteChanged ? ` (CHANGED${r.attributedTo ? `, convinced by ${r.attributedTo.split("/").pop()}` : ""})` : "";
           return `  - ${r.modelLabel} → ${r.vote}${changed}: ${r.reasoning.slice(0, 200)}`;
         })
         .join("\n");
@@ -80,17 +80,23 @@ export async function generateFinalSummary(
       ? `Consensus reached on ${session.winningOption} in round ${session.rounds.length}`
       : `No consensus after ${session.rounds.length} rounds`;
 
-  const instructions = `You are writing the final summary of an AI roundtable debate.
+  const modelNames = session.models.map((m) => m.split("/").pop()).join(", ");
+
+  const instructions = `You are writing the final summary of an AI ${session.mode === "expert_panel" ? "expert panel" : "roundtable debate"}.
 
 Question: ${session.question}
 Options: ${optionList}
-Models: ${session.models.map((m) => m.split("/").pop()).join(", ")}
+Models: ${modelNames}
 Result: ${statusStr}
 
 Full deliberation:
 ${roundSummaries}
 
-Write a concise final summary: a brief narrative, the strongest argument for each option, the result, and key turning points.`;
+Write a final summary that specifically references each model by name. For each model, describe what they voted for, whether they changed their mind, and if so, which model's argument convinced them. Be specific about individual model decisions rather than abstracting away the participants.
+
+Include the strongest argument made for each option, and identify key turning points where specific models influenced the outcome.
+
+Also provide a modelDecisions array with each model's final position and whether they changed their mind.`;
 
   const result = await client.call({
     name: "summarize",

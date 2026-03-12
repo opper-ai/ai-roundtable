@@ -29,6 +29,8 @@ export type SessionStatus =
   | "max_rounds"
   | "error";
 
+export type SessionMode = "roundtable" | "expert_panel";
+
 export interface RoundSummary {
   keyArguments: string[];
   voteChanges: string[];
@@ -36,15 +38,25 @@ export interface RoundSummary {
   outlook: string;
 }
 
+export interface ModelDecision {
+  model: string;
+  finalPosition: string;
+  changedMind: boolean;
+  influencedBy?: string;
+  reasoning: string;
+}
+
 export interface FinalSummary {
   narrative: string;
   strongestPerOption: Record<string, string>;
   result: string;
   keyTurningPoints: string[];
+  modelDecisions?: ModelDecision[];
 }
 
 export interface RoundtableSession {
   id: string;
+  mode: SessionMode;
   question: string;
   options: VoteOption[];
   models: string[];

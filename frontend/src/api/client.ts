@@ -1,4 +1,4 @@
-import type { VoteOption, LLMModel } from "../types";
+import type { VoteOption, LLMModel, SessionMode } from "../types";
 
 const API_BASE = "/api";
 
@@ -6,6 +6,7 @@ export async function createSession(params: {
   question: string;
   models: string[];
   options: VoteOption[];
+  mode?: SessionMode;
   consensusThreshold?: number;
   maxRounds?: number;
   contextRounds?: number;

@@ -115,8 +115,8 @@ function App() {
       {/* Main content */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left: Canvas */}
-        <div className="flex flex-1 items-center justify-center p-6">
-          <div className="flex flex-col items-center gap-4" style={{ maxWidth: 600 }}>
+        <div className="flex flex-1 items-center justify-center overflow-auto p-6">
+          <div className="flex flex-col items-center gap-4">
             <RoundtableCanvas
               session={session}
               thinkingModels={thinkingModels}

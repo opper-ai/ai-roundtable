@@ -18,7 +18,9 @@ export function RoundtableCanvas({
   // Dynamic sizing based on model count
   const circleSize = n <= 4 ? 80 : n <= 6 ? 64 : n <= 9 ? 52 : 44;
   const minRadius = Math.max(140, ((circleSize + 40) * n) / (2 * Math.PI));
-  const canvasSize = Math.max(400, (minRadius + circleSize) * 2 + 40);
+  // Extra padding for labels + vote badges overflowing the circles
+  const overflow = 40;
+  const canvasSize = Math.max(400, (minRadius + circleSize) * 2 + overflow * 2);
   const centerX = canvasSize / 2;
   const centerY = canvasSize / 2;
 

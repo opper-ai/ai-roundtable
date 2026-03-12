@@ -60,6 +60,14 @@ npm run dev -w frontend
 
 The frontend proxies API calls to the backend automatically.
 
+### Run with Docker
+
+```bash
+docker compose up --build
+```
+
+Same ports — frontend on http://localhost:5173, backend on http://localhost:3001. The `.env` file is picked up automatically.
+
 ## License
 
 MIT

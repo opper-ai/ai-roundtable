@@ -4,32 +4,62 @@ An interactive application that orchestrates structured deliberation among multi
 
 ## How It Works
 
-1. **Setup** — Define a question, voting options, and select which AI models participate
-2. **Debate rounds** — Each round, all models argue their position and cast a vote. They can see prior arguments and change their minds
-3. **Consensus** — Rounds continue until a configurable threshold is met (majority, supermajority, or unanimous) or the max rounds are reached
-4. **Transcript** — Every round's reasoning, vote changes, and summaries are captured and can be downloaded as Markdown
+**Roundtable Discussion** — A multi-round debate where AI models argue positions and try to convince each other:
 
-The frontend visualizes models as a roundtable, with live updates via SSE as models respond.
+1. **Blind Round** — Each model answers independently, unaware of the other participants
+2. **Informed Debate** — Models see all prior responses. They can change their mind, counter arguments, and address other models by name
+3. **Final Round** (optional) — One last chance to make their case before consensus is checked
+
+Consensus is reached when enough models agree — configurable as majority (50%), supermajority (67%), or unanimous (100%).
+
+**Expert Panel** — Each model gives a single independent answer. No deliberation, no influence — just diverse perspectives side by side.
 
 ## Architecture
 
 - **Frontend**: React + Vite + Tailwind CSS
 - **Backend**: Express + TypeScript
-- **LLM integration**: Pluggable `LLMClient` interface — the default implementation uses [Opper](https://opper.ai), but you can swap in any provider by implementing the interface in `backend/src/llm-client.ts`
+- **LLM integration**: All models called via the [Opper](https://opper.ai) platform with structured output (JSON schema)
 
-## Running Locally
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18+
+- An [Opper](https://opper.ai) API key
+
+### Setup
 
 ```bash
-# Install dependencies
+git clone https://github.com/opper-ai/ai-roundtable.git
+cd ai-roundtable
 npm install
+```
 
-# Set your API key
+Create a `.env` file in the project root:
+
+```bash
 cp .env.example .env
-# Edit .env with your OPPER_API_KEY
+```
 
+Then edit `.env` and add your Opper API key:
+
+```
+OPPER_API_KEY=your-api-key-here
+```
+
+### Run
+
+```bash
 # Start both frontend and backend in dev mode
 npm run dev -w backend &
 npm run dev -w frontend
 ```
 
-The frontend runs on `http://localhost:5173` and proxies API calls to the backend on port 3001.
+- Frontend: http://localhost:5173
+- Backend: http://localhost:3001
+
+The frontend proxies API calls to the backend automatically.
+
+## License
+
+MIT

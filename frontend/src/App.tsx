@@ -37,6 +37,11 @@ function App() {
     }
   }, []);
 
+  const handleGoHome = useCallback(() => {
+    setViewRound(null);
+    setSessionId(null);
+  }, []);
+
   const handleRunAgain = async () => {
     if (!session) return;
     setRunAgainLoading(true);
@@ -63,13 +68,25 @@ function App() {
     return <SetupForm onSessionCreated={setSessionId} />;
   }
 
+  const winningLabel =
+    session.winningOption != null
+      ? session.options.find((option) => option.id === session.winningOption)?.label
+      : undefined;
+  const isHistoricalView = viewRound != null && viewRound < session.rounds.length;
+
   return (
     <div className="flex h-screen flex-col bg-[#F8F8F8]">
       {/* Header */}
       <header className="border-b border-gray-200 bg-white px-6 py-3" ref={headerRef}>
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
-            <h1 className="text-lg font-bold text-[#1B2E40]">AI Roundtable</h1>
+            <button
+              type="button"
+              className="cursor-pointer text-left text-lg font-bold text-[#1B2E40] transition-colors hover:text-[#0D5445]"
+              onClick={handleGoHome}
+            >
+              AI Roundtable
+            </button>
             <div
               className="group mt-0.5 cursor-pointer"
               onClick={() => setQuestionExpanded((v) => !v)}
@@ -101,10 +118,7 @@ function App() {
             )}
             <button
               className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-50 transition-colors"
-              onClick={() => {
-                setViewRound(null);
-                setSessionId(null);
-              }}
+              onClick={handleGoHome}
             >
               New Roundtable
             </button>
@@ -116,12 +130,47 @@ function App() {
       <div className="flex flex-1 overflow-hidden">
         {/* Left: Canvas */}
         <div className="flex flex-1 items-center justify-center overflow-auto p-6">
-          <div className="flex flex-col items-center gap-4">
-            <RoundtableCanvas
-              session={session}
-              thinkingModels={thinkingModels}
-              displayRound={displayRound}
-            />
+          <div className="flex w-full max-w-[620px] flex-col items-start gap-4">
+            <div className="w-full">
+              {isHistoricalView && (
+                <div>
+                  <span className="text-sm font-semibold text-gray-500">
+                    Round {displayRound}
+                  </span>
+                </div>
+              )}
+              {!isHistoricalView && session.status === "running" && (
+                <div>
+                  <span className="text-sm font-semibold text-[#3C3CAF]">
+                    Round {session.rounds.length || 1}
+                  </span>
+                </div>
+              )}
+              {!isHistoricalView && session.status === "consensus" && (
+                <div className="flex flex-col items-start">
+                  <span className="text-base font-semibold text-[#0D5445]">
+                    Consensus: {session.winningOption}
+                  </span>
+                  {winningLabel && winningLabel !== session.winningOption && (
+                    <span className="text-sm text-[#0D5445]/70">{winningLabel}</span>
+                  )}
+                </div>
+              )}
+              {!isHistoricalView && session.status === "max_rounds" && (
+                <div>
+                  <span className="text-base font-semibold text-[#6B3A1A]">
+                    No consensus
+                  </span>
+                </div>
+              )}
+            </div>
+            <div className="flex w-full justify-center">
+              <RoundtableCanvas
+                session={session}
+                thinkingModels={thinkingModels}
+                displayRound={displayRound}
+              />
+            </div>
             <RoundSlider
               totalRounds={session.rounds.length}
               maxRounds={session.maxRounds}

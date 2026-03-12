@@ -19,8 +19,8 @@ export function RoundtableCanvas({
   const circleSize = n <= 4 ? 80 : n <= 6 ? 64 : n <= 9 ? 52 : 44;
   const minRadius = Math.max(140, ((circleSize + 40) * n) / (2 * Math.PI));
   // Extra padding for labels + vote badges overflowing the circles
-  const overflow = 40;
-  const canvasSize = Math.max(400, (minRadius + circleSize) * 2 + overflow * 2);
+  const overflow = 20;
+  const canvasSize = (minRadius + circleSize) * 2 + overflow * 2;
   const centerX = canvasSize / 2;
   const centerY = canvasSize / 2;
 
@@ -41,11 +41,6 @@ export function RoundtableCanvas({
       y: centerY + minRadius * Math.sin(angle),
     };
   });
-
-  // Determine what to show in center
-  const isHistorical = displayRound != null && displayRound < session.rounds.length;
-  const showLiveStatus = !isHistorical;
-
   return (
     <div className="relative" style={{ width: canvasSize, height: canvasSize }}>
       {models.map((modelId, i) => {
@@ -59,51 +54,13 @@ export function RoundtableCanvas({
             modelId={modelId}
             label={label}
             latestResponse={response}
-            isThinking={showLiveStatus && thinkingModels.has(modelId)}
+            isThinking={thinkingModels.has(modelId)}
             x={pos.x}
             y={pos.y}
             size={circleSize}
           />
         );
       })}
-
-      {/* Center label */}
-      <div
-        className="absolute flex flex-col items-center justify-center text-center pointer-events-none"
-        style={{
-          left: centerX,
-          top: centerY,
-          transform: "translate(-50%, -50%)",
-          whiteSpace: "nowrap",
-        }}
-      >
-        {showLiveStatus && session.status === "consensus" && (
-          <>
-            <span className="text-sm font-semibold text-[#0D5445]">
-              Consensus: {session.winningOption}
-            </span>
-            {(() => {
-              const label = session.options.find(o => o.id === session.winningOption)?.label;
-              return label && label !== session.winningOption ? (
-                <span className="text-xs text-[#0D5445]/70">{label}</span>
-              ) : null;
-            })()}
-          </>
-        )}
-        {showLiveStatus && session.status === "running" && (
-          <span className="text-xs text-[#3C3CAF]">
-            Round {session.rounds.length || 1}
-          </span>
-        )}
-        {showLiveStatus && session.status === "max_rounds" && (
-          <span className="text-sm font-semibold text-[#6B3A1A]">No consensus</span>
-        )}
-        {isHistorical && (
-          <span className="text-xs text-gray-400">
-            Round {displayRound}
-          </span>
-        )}
-      </div>
     </div>
   );
 }

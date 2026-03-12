@@ -1,11 +1,13 @@
+@import url('https://fonts.googleapis.com/css2?family=Wix+Madefor+Display:wght@400;500;600;700;800&display=swap');
+
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
 body {
   margin: 0;
-  background: #0f172a;
-  color: #e2e8f0;
-  font-family: system-ui, -apple-system, sans-serif;
+  background: #F8F8F8;
+  color: #1B2E40;
+  font-family: 'Wix Madefor Display', system-ui, -apple-system, sans-serif;
 }
 
 #root {

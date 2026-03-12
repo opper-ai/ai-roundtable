@@ -16,13 +16,13 @@ export function StatusBar({ session, displayRound }: StatusBarProps) {
 
   return (
     <div className="flex w-full flex-col gap-2">
-      <div className="flex items-center justify-between text-xs text-slate-400">
+      <div className="flex items-center justify-between text-xs text-gray-500">
         <span>
           Round {displayRound ?? session.rounds.length} / {session.maxRounds}
         </span>
         <span>
           {session.status === "consensus" && (
-            <span className="font-semibold text-green-400">
+            <span className="font-semibold text-emerald-600">
               Consensus: {session.winningOption}
               {(() => {
                 const label = session.options.find(o => o.id === session.winningOption)?.label;
@@ -31,20 +31,20 @@ export function StatusBar({ session, displayRound }: StatusBarProps) {
             </span>
           )}
           {session.status === "max_rounds" && (
-            <span className="text-yellow-400">Max rounds reached</span>
+            <span className="text-amber-600">Max rounds reached</span>
           )}
           {session.status === "running" && (
-            <span className="text-blue-400">Deliberating...</span>
+            <span className="text-[#3C3CAF]">Deliberating...</span>
           )}
           {session.status === "error" && (
-            <span className="text-red-400">Error</span>
+            <span className="text-red-500">Error</span>
           )}
         </span>
       </div>
 
       {/* Vote distribution bar */}
       {totalVotes > 0 && (
-        <div className="flex h-8 overflow-hidden rounded-lg bg-slate-700">
+        <div className="flex h-8 overflow-hidden rounded-xl bg-gray-100">
           {Object.entries(dist).map(([optionId, count]) => {
             const pct = (count / totalVotes) * 100;
             return (
@@ -69,7 +69,7 @@ export function StatusBar({ session, displayRound }: StatusBarProps) {
 
       {/* Text breakdown */}
       {totalVotes > 0 && (
-        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-[11px] text-slate-400">
+        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-[11px] text-gray-500">
           {Object.entries(dist).map(([optionId, count]) => {
             const label = session.options.find((o) => o.id === optionId)?.label;
             return (
@@ -78,7 +78,7 @@ export function StatusBar({ session, displayRound }: StatusBarProps) {
                   {optionId}
                 </span>
                 {label && label !== optionId && (
-                  <span className="text-slate-500"> ({label})</span>
+                  <span className="text-gray-400"> ({label})</span>
                 )}
                 : {count}
               </span>
@@ -88,7 +88,7 @@ export function StatusBar({ session, displayRound }: StatusBarProps) {
       )}
 
       {/* Consensus threshold indicator */}
-      <div className="text-center text-[10px] text-slate-500">
+      <div className="text-center text-[10px] text-gray-400">
         Need {session.consensusThreshold} of {session.models.length} to reach
         consensus
       </div>

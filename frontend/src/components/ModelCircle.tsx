@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { getVoteColor } from "./VoteChip";
+import { getProviderInfo } from "../utils/modelLogos";
 import type { ModelResponse } from "../types";
 
 interface ModelCircleProps {
@@ -13,6 +14,7 @@ interface ModelCircleProps {
 }
 
 export function ModelCircle({
+  modelId,
   label,
   latestResponse,
   isThinking,
@@ -21,9 +23,13 @@ export function ModelCircle({
   size = 80,
 }: ModelCircleProps) {
   const vote = latestResponse?.vote;
-  const borderColor = vote ? getVoteColor(vote) : "#475569";
-  const fontSize = size >= 64 ? "text-2xl" : size >= 48 ? "text-lg" : "text-base";
+  const borderColor = vote ? getVoteColor(vote) : "#D1D5DB";
+  const provider = getProviderInfo(modelId);
   const labelMaxW = size + 20;
+
+  // Scale sizes based on circle size
+  const logoSize = size >= 64 ? 20 : size >= 48 ? 16 : 14;
+  const voteSize = size >= 64 ? "text-lg" : size >= 48 ? "text-base" : "text-sm";
 
   return (
     <motion.div
@@ -34,7 +40,7 @@ export function ModelCircle({
       transition={{ type: "spring", stiffness: 200, damping: 20 }}
     >
       <motion.div
-        className="relative flex items-center justify-center rounded-full bg-slate-800"
+        className="relative flex flex-col items-center justify-center gap-0.5 rounded-full bg-white shadow-sm"
         style={{
           width: size,
           height: size,
@@ -56,9 +62,24 @@ export function ModelCircle({
             : {}
         }
       >
+        {/* Provider initial badge */}
+        <div
+          className="flex items-center justify-center rounded-full font-bold"
+          style={{
+            width: logoSize,
+            height: logoSize,
+            backgroundColor: provider.bgColor,
+            color: provider.color,
+            fontSize: logoSize * 0.55,
+          }}
+        >
+          {provider.initial}
+        </div>
+
+        {/* Vote letter */}
         {vote && (
           <motion.span
-            className={`${fontSize} font-bold`}
+            className={`${voteSize} font-bold leading-none`}
             style={{ color: getVoteColor(vote) }}
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
@@ -67,14 +88,16 @@ export function ModelCircle({
             {vote}
           </motion.span>
         )}
-        {!vote && (
-          <span className="text-sm text-slate-500">?</span>
+        {!vote && !isThinking && (
+          <span className="text-[10px] text-gray-400">?</span>
         )}
-
+        {!vote && isThinking && (
+          <span className="text-[10px] text-gray-400">...</span>
+        )}
       </motion.div>
 
       <span
-        className="mt-1.5 truncate text-center text-xs text-slate-400"
+        className="mt-1.5 truncate text-center text-xs text-gray-500"
         style={{ maxWidth: labelMaxW }}
       >
         {label}

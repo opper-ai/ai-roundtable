@@ -435,16 +435,8 @@ function buildRound2Instructions(
 
   // Build history of all prior responses
   const allRounds = session.rounds;
-  const relevantRounds = session.contextRounds
-    ? allRounds.slice(-session.contextRounds)
-    : allRounds;
-  const omittedCount = allRounds.length - relevantRounds.length;
-
   const historyParts: string[] = [];
-  if (omittedCount > 0) {
-    historyParts.push(`*(Earlier ${omittedCount} round${omittedCount > 1 ? "s" : ""} omitted — showing last ${relevantRounds.length} of ${allRounds.length})*`);
-  }
-  for (const round of relevantRounds) {
+  for (const round of allRounds) {
     const roundArgs = round.responses
       .map((r) => {
         const who = r.modelId === modelId ? `${r.modelLabel} (you)` : r.modelLabel;

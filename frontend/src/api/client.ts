@@ -9,7 +9,7 @@ export async function createSession(params: {
   mode?: SessionMode;
   consensusThreshold?: number;
   maxRounds?: number;
-  contextRounds?: number;
+
 }): Promise<{ sessionId: string }> {
   const res = await fetch(`${API_BASE}/sessions`, {
     method: "POST",

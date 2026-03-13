@@ -11,7 +11,7 @@ export function createSessionsRouter(client: LLMClient): Router {
   const router = Router();
 
   router.post("/api/sessions", (req, res) => {
-    const { question, models, options, mode, consensusThreshold, maxRounds, contextRounds } =
+    const { question, models, options, mode, consensusThreshold, maxRounds } =
       req.body;
 
     if (!question || !models?.length || !options?.length) {
@@ -28,7 +28,6 @@ export function createSessionsRouter(client: LLMClient): Router {
       mode,
       consensusThreshold,
       maxRounds,
-      contextRounds,
     });
 
     // Start the session loop async

@@ -12,7 +12,7 @@ export function createSession(params: {
   mode?: SessionMode;
   consensusThreshold?: number;
   maxRounds?: number;
-  contextRounds?: number;
+
 }): RoundtableSession {
   const id = uuidv4();
   const modelCount = params.models.length;
@@ -30,7 +30,6 @@ export function createSession(params: {
     consensusThreshold:
       params.consensusThreshold ?? modelCount,
     maxRounds: mode === "expert_panel" ? 1 : (params.maxRounds ?? defaultMaxRounds),
-    contextRounds: params.contextRounds,
     rounds: [],
     status: "pending",
     createdAt: new Date().toISOString(),

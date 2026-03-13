@@ -62,7 +62,6 @@ export interface RoundtableSession {
   models: string[];
   consensusThreshold: number;
   maxRounds: number;
-  contextRounds?: number;
   rounds: Round[];
   status: SessionStatus;
   winningOption?: string;

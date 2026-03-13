@@ -53,7 +53,7 @@ function App() {
         mode: session.mode,
         consensusThreshold: session.consensusThreshold,
         maxRounds: session.maxRounds,
-        contextRounds: session.contextRounds,
+
       });
       setViewRound(null);
       setSessionId(newId);
